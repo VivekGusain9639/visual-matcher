@@ -287,7 +287,9 @@
                 this.isProcessing = true;
                 
                 try {
+                    // Extract base64 data, removing the data URL prefix
                     this.uploadedImageBase64 = imageSrc.split(',')[1];
+                    
                     await new Promise((resolve, reject) => {
                         this.previewImage.onload = resolve;
                         this.previewImage.onerror = () => reject(new Error('Failed to load image preview. Check URL or file.'));
@@ -485,38 +487,46 @@
             }
 
             /**
-             * Uses Gemini to get semantic search keywords and a primary category for an image.
+             * SECURE IMPLEMENTATION
+             * =================================================================
+             * This function now calls a secure backend endpoint (/api/analyze) instead of Google's API directly.
+             * This prevents the API key from being exposed in the browser.
+             *
+             * IMPORTANT: For this to work, you need to:
+             * 1. Create a file at '/api/analyze.js' to act as your backend.
+             * 2. Deploy this project to a host that supports serverless functions (e.g., Vercel, Netlify).
+             * 3. Set your Google AI API key as a secure environment variable (e.g., GEMINI_API_KEY) on that host.
+             * =================================================================
              * @returns {Promise<{primaryCategory: string, keywords: string[]}>} A promise that resolves to an analysis object.
              */
             async getAiAnalysis() {
                 if (!this.uploadedImageBase64) return { primaryCategory: null, keywords: [] };
+                
                 try {
-                    const apiKey = ""; 
-                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
-                    const prompt = `Analyze the main product in this image. From the following list of categories, choose the single most relevant one: [${this.productCategories.map(c => `"${c}"`).join(', ')}]. Then, provide 5-7 additional lowercase search keywords. Return a JSON object with two keys: "primaryCategory" (a string) and "keywords" (an array of strings). Example: {"primaryCategory": "mens-shirts", "keywords": ["t-shirt", "clothing", "casual", "cotton", "shirt"]}`;
-                    
-                    const payload = {
-                        contents: [{
-                            parts: [
-                                { text: prompt },
-                                { inlineData: { mimeType: "image/jpeg", data: this.uploadedImageBase64 } }
-                            ]
-                        }]
-                    };
-                    const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
-                    if (!response.ok) throw new Error('AI analysis failed.');
-                    const result = await response.json();
-                    const text = result.candidates[0].content.parts[0].text;
-                    
-                    const jsonMatch = text.match(/\{[\s\S]*\}/);
-                    if (jsonMatch && jsonMatch[0]) {
-                        return JSON.parse(jsonMatch[0]);
-                    } else {
-                        throw new Error("AI response did not contain a valid JSON object.");
+                    // This is the relative path to your secure backend function.
+                    const response = await fetch('/api/analyze', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            imageBase64: this.uploadedImageBase64,
+                            categories: this.productCategories
+                        }),
+                    });
+
+                    if (!response.ok) {
+                        const errorResult = await response.json();
+                        throw new Error(errorResult.message || 'Failed to get AI analysis from server.');
                     }
+                    
+                    const analysisResult = await response.json();
+                    return analysisResult;
+
                 } catch (error) {
                     console.error("Failed to get AI analysis:", error);
-                    this.showToast('AI analysis failed. Please try another image.', 'error');
+                    // Provide a more user-friendly error message
+                    this.showToast('Could not analyze the image. The server may be busy. Please try again.', 'error');
                     throw error;
                 }
             }
