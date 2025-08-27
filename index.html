@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visual Product Matcher</title>
+    <!-- Tailwind CSS for modern styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts for better typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Custom styles to complement Tailwind */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f8f9fa;
+        }
+        /* Custom scrollbar for a cleaner look */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+        /* Transition for smooth appearance */
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        /* Custom focus ring for accessibility */
+        :focus-visible {
+            outline: 2px solid #3b82f6;
+            outline-offset: 2px;
+        }
+        /* Drag-over effect for the upload area */
+        .drag-over {
+            border-color: #3b82f6;
+            background-color: #eff6ff;
+        }
+    </style>
+</head>
+<body class="text-gray-800">
+
+    <!-- Main Container -->
+    <div class="container mx-auto p-4 md:p-8 max-w-7xl">
+        
+        <!-- Header -->
+        <header class="relative text-center mb-8 md:mb-12">
+            <h1 class="text-4xl md:text-5xl font-bold text-gray-900">Visual Product Matcher</h1>
+            <p class="mt-2 text-lg text-gray-600">Upload an image to find visually similar products.</p>
+        </header>
+
+        <main>
+            <!-- Upload & Preview Section -->
+            <section class="bg-white p-6 rounded-2xl shadow-lg border border-gray-200 fade-in">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+                    
+                    <!-- Upload Methods -->
+                    <div id="upload-container">
+                        <!-- File Upload Area -->
+                        <label for="file-input" class="upload-area group cursor-pointer flex flex-col items-center justify-center w-full h-64 border-2 border-gray-300 border-dashed rounded-xl transition hover:bg-gray-50">
+                            <div class="flex flex-col items-center justify-center pt-5 pb-6 text-center">
+                                <svg class="w-10 h-10 mb-4 text-gray-500 group-hover:text-blue-500" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"/></svg>
+                                <p class="mb-2 text-sm text-gray-600"><span class="font-semibold">Click to upload</span> or drag and drop</p>
+                                <p class="text-xs text-gray-500">JPG, PNG, or WEBP</p>
+                            </div>
+                            <input id="file-input" type="file" class="hidden" accept="image/*" />
+                        </label>
+                        
+                        <!-- OR Divider -->
+                        <div class="flex items-center my-4">
+                            <div class="flex-grow border-t border-gray-300"></div>
+                            <span class="flex-shrink mx-4 text-gray-500 text-sm">OR</span>
+                            <div class="flex-grow border-t border-gray-300"></div>
+                        </div>
+
+                        <!-- URL Input -->
+                        <div>
+                            <label for="url-input" class="block mb-2 text-sm font-medium text-gray-700">Enter image URL</label>
+                            <div class="flex gap-2">
+                                <input type="url" id="url-input" class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5" placeholder="https://example.com/image.jpg">
+                                <button type="button" id="url-submit" class="text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5">Load</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Image Preview -->
+                    <div id="preview-container" class="hidden flex-col items-center justify-center">
+                        <div class="relative w-full max-w-sm mx-auto">
+                            <img id="preview-image" alt="Uploaded image" class="rounded-xl shadow-md w-full h-auto object-contain max-h-72">
+                            <button type="button" id="clear-image" aria-label="Clear Image" class="absolute -top-2 -right-2 bg-white rounded-full p-1.5 shadow-md hover:bg-gray-100 transition">
+                                <svg class="w-5 h-5 text-gray-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Controls Section (Results Count Only) -->
+            <section id="controls-section" class="hidden mt-8 bg-white p-4 rounded-2xl shadow-lg border border-gray-200 fade-in">
+                <div class="flex items-center justify-center">
+                    <span id="results-count" class="text-base font-medium text-gray-800" aria-live="polite">0 products found</span>
+                </div>
+            </section>
+
+            <!-- Results Section -->
+            <section id="results-section" class="mt-8 min-h-[200px]">
+                 <!-- Loading text and spinner (now combined with skeleton) -->
+                <div id="loading-section" class="hidden">
+                    <div class="text-center mb-6">
+                        <p id="loading-text" class="text-lg text-gray-600 animate-pulse">Analyzing image with AI...</p>
+                    </div>
+                </div>
+                <!-- Results Grid -->
+                <div id="results-grid" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+                     <!-- Initial state message or skeleton loader will be injected here -->
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 space-y-2"></div>
+
+    <script>
+        /**
+         * @class VisualProductMatcher
+         * @description Manages the entire functionality of the Visual Product Matcher application,
+         * from UI interactions to image processing and AI-powered semantic search.
+         */
+        class VisualProductMatcher {
+            constructor() {
+                // State properties
+                this.products = [];
+                this.productCategories = [];
+                this.filteredProducts = [];
+                this.uploadedImageBase64 = null;
+                this.isProcessing = false;
+
+                // Configuration
+                this.config = {
+                    maxResults: 300,
+                    usdToInrRate: 83 
+                };
+
+                this.initializeElements();
+                this.setupEventListeners();
+                this.loadProducts().then(() => {
+                    this.renderInitialState();
+                });
+            }
+
+            /**
+             * Selects and stores all necessary DOM elements for the application.
+             */
+            initializeElements() {
+                this.fileInput = document.getElementById('file-input');
+                this.urlInput = document.getElementById('url-input');
+                this.urlSubmit = document.getElementById('url-submit');
+                this.uploadArea = document.querySelector('.upload-area');
+                this.clearImageBtn = document.getElementById('clear-image');
+                
+                this.uploadContainer = document.getElementById('upload-container');
+                this.previewContainer = document.getElementById('preview-container');
+                this.previewImage = document.getElementById('preview-image');
+                
+                this.controlsSection = document.getElementById('controls-section');
+                this.resultsCount = document.getElementById('results-count');
+                
+                this.loadingSection = document.getElementById('loading-section');
+                this.loadingText = document.getElementById('loading-text');
+                this.resultsGrid = document.getElementById('results-grid');
+                this.toastContainer = document.getElementById('toast-container');
+            }
+
+            /**
+             * Sets up all event listeners for user interactions.
+             */
+            setupEventListeners() {
+                this.fileInput.addEventListener('change', e => this.handleFileUpload(e));
+                this.urlSubmit.addEventListener('click', () => this.handleUrlUpload());
+                this.urlInput.addEventListener('keypress', e => {
+                    if (e.key === 'Enter') this.handleUrlUpload();
+                });
+
+                this.uploadArea.addEventListener('dragover', e => this.handleDragOver(e));
+                this.uploadArea.addEventListener('dragleave', e => this.handleDragLeave(e));
+                this.uploadArea.addEventListener('drop', e => this.handleDrop(e));
+
+                this.clearImageBtn.addEventListener('click', () => this.clearImage());
+            }
+
+            /**
+             * Fetches an expanded product database from the dummy API.
+             * @returns {Promise<void>}
+             */
+            async loadProducts() {
+                try {
+                    this.showToast('Loading product database...', 'info');
+                    const fetches = [
+                        fetch('https://dummyjson.com/products?limit=100&skip=0').then(res => res.json()),
+                        fetch('https://dummyjson.com/products?limit=100&skip=100').then(res => res.json()),
+                        fetch('https://dummyjson.com/products?limit=100&skip=200').then(res => res.json())
+                    ];
+
+                    const results = await Promise.all(fetches);
+                    const allProducts = results.flatMap(data => data.products);
+
+                    this.products = allProducts.map(product => ({
+                        id: product.id,
+                        title: product.title,
+                        category: product.category,
+                        price: product.price,
+                        image: product.thumbnail || (product.images && product.images[0]) || ''
+                    }));
+                    
+                    this.productCategories = [...new Set(this.products.map(p => p.category))];
+
+                    this.showToast(`Loaded ${this.products.length} products!`, 'success');
+                } catch (error) {
+                    console.error('Failed to load products:', error);
+                    this.showToast('Failed to load product database. Please refresh.', 'error');
+                }
+            }
+
+            handleFileUpload(event) {
+                const file = event.target.files[0];
+                if (file && file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = e => this.processImage(e.target.result);
+                    reader.onerror = () => this.showToast('Failed to read the selected file.', 'error');
+                    reader.readAsDataURL(file);
+                } else if (file) {
+                    this.showToast('Please select a valid image file.', 'error');
+                }
+            }
+
+            handleUrlUpload() {
+                const url = this.urlInput.value.trim();
+                if (!url) {
+                    this.showToast('Please enter an image URL.', 'error');
+                    return;
+                }
+                if (!url.match(/\.(jpeg|jpg|gif|png|webp)$/) && !url.startsWith('https://images.unsplash.com')) {
+                    this.showToast('Please enter a valid image URL.', 'error');
+                    return;
+                }
+                this.processImage(url);
+            }
+            
+            handleDragOver(event) { event.preventDefault(); this.uploadArea.classList.add('drag-over'); }
+            handleDragLeave(event) { event.preventDefault(); this.uploadArea.classList.remove('drag-over'); }
+
+            handleDrop(event) {
+                event.preventDefault();
+                this.uploadArea.classList.remove('drag-over');
+                const file = event.dataTransfer.files[0];
+                if (file && file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = e => this.processImage(e.target.result);
+                    reader.readAsDataURL(file);
+                } else {
+                    this.showToast('Please drop a valid image file.', 'error');
+                }
+            }
+
+            /**
+             * Main function to process an image using AI semantic search.
+             * @param {string} imageSrc - The base64 data URL of the image.
+             */
+            async processImage(imageSrc) {
+                if (this.isProcessing) {
+                    this.showToast('Already processing an image. Please wait.', 'info');
+                    return;
+                }
+                this.isProcessing = true;
+                
+                try {
+                    this.uploadedImageBase64 = imageSrc.split(',')[1];
+                    await new Promise((resolve, reject) => {
+                        this.previewImage.onload = resolve;
+                        this.previewImage.onerror = () => reject(new Error('Failed to load image preview. Check URL or file.'));
+                        this.previewImage.src = imageSrc;
+                    });
+                    this.updateUIState('loading');
+
+                    this.loadingText.textContent = 'Analyzing image with AI...';
+                    const aiAnalysis = await this.getAiAnalysis();
+
+                    this.loadingText.textContent = 'Finding relevant products...';
+                    this.findAndRankProducts(aiAnalysis);
+                    
+                    this.renderResults();
+                    this.updateUIState('results');
+
+                } catch (error) {
+                    console.error('Image processing error:', error);
+                    this.showToast(error.message, 'error');
+                    this.clearImage();
+                } finally {
+                    this.isProcessing = false;
+                    this.loadingText.textContent = 'Finding similar products...';
+                }
+            }
+
+            /**
+             * Uses AI to find relevant products and ranks them by relevance.
+             * @param {object} aiAnalysis - Object containing primaryCategory and keywords.
+             */
+            findAndRankProducts(aiAnalysis) {
+                const { primaryCategory, keywords } = aiAnalysis;
+
+                let productsToRank = this.products;
+
+                // Stage 1: If a primary category is confidently identified, filter by it first.
+                if (primaryCategory && this.productCategories.includes(primaryCategory)) {
+                    productsToRank = this.products.filter(product => product.category === primaryCategory);
+                }
+                // If the primary category is not valid or not found, the system automatically
+                // falls back to searching the entire product list with the keywords.
+
+                // Stage 2: Rank the filtered (or full) list based on all keywords.
+                const rankedProducts = productsToRank.map(product => {
+                    const title = product.title.toLowerCase();
+                    const category = product.category.toLowerCase();
+                    let score = 0;
+
+                    keywords.forEach((keyword, index) => {
+                        const relevance = keywords.length - index;
+                        if (category.includes(keyword)) {
+                            score += relevance * 2; 
+                        }
+                        if (title.includes(keyword)) {
+                            score += relevance;
+                        }
+                    });
+                    return { ...product, score };
+                })
+                .filter(product => product.score > 0)
+                .sort((a, b) => b.score - a.score);
+
+                this.filteredProducts = rankedProducts;
+            }
+
+            renderInitialState() {
+                this.resultsGrid.innerHTML = `
+                    <div class="col-span-full text-center py-12 bg-gray-50 rounded-lg">
+                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-hidden="true">
+                            <path vector-effect="non-scaling-stroke" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l-1.586-1.586a2 2 0 00-2.828 0L6 18" />
+                        </svg>
+                        <h3 class="mt-2 text-lg font-semibold text-gray-800">Start by uploading an image</h3>
+                        <p class="mt-1 text-sm text-gray-500">Your visual search results will appear here.</p>
+                    </div>`;
+            }
+            
+            /**
+             * Renders a skeleton loading state for the results grid.
+             */
+            renderSkeletonLoader() {
+                this.resultsGrid.innerHTML = '';
+                const fragment = document.createDocumentFragment();
+                for (let i = 0; i < 10; i++) {
+                    const skeletonCard = document.createElement('div');
+                    skeletonCard.className = "bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden animate-pulse";
+                    skeletonCard.innerHTML = `
+                        <div class="w-full h-48 bg-gray-200"></div>
+                        <div class="p-4 space-y-3">
+                            <div class="h-4 bg-gray-200 rounded w-3/4"></div>
+                            <div class="h-3 bg-gray-200 rounded w-1/2"></div>
+                            <div class="h-5 bg-gray-200 rounded w-1/4"></div>
+                        </div>
+                    `;
+                    fragment.appendChild(skeletonCard);
+                }
+                this.resultsGrid.appendChild(fragment);
+            }
+
+            renderResults() {
+                this.resultsGrid.innerHTML = '';
+                this.updateResultsCount();
+
+                if (this.filteredProducts.length === 0) {
+                    this.resultsGrid.innerHTML = `
+                        <div class="col-span-full text-center py-12 bg-gray-50 rounded-lg">
+                            <h3 class="text-lg font-semibold text-gray-800">No Matches Found</h3>
+                            <p class="text-gray-500 mt-1">Could not find any products matching the uploaded image.</p>
+                        </div>`;
+                    return;
+                }
+
+                const fragment = document.createDocumentFragment();
+                this.filteredProducts.forEach(product => {
+                    const card = document.createElement('div');
+                    const priceInInr = (product.price * this.config.usdToInrRate).toLocaleString('en-IN');
+                    card.className = "group relative bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden transition-all hover:shadow-lg hover:-translate-y-1";
+                    card.innerHTML = `
+                        <div class="w-full h-48 bg-gray-100">
+                            <img src="${product.image}" alt="${this.escapeHtml(product.title)}" class="w-full h-full object-cover transition-transform group-hover:scale-105" loading="lazy">
+                        </div>
+                        <div class="p-4">
+                            <h3 class="text-sm font-semibold text-gray-800 truncate" title="${this.escapeHtml(product.title)}">${this.escapeHtml(product.title)}</h3>
+                            <p class="text-xs text-gray-500 capitalize mt-1">${this.escapeHtml(product.category)}</p>
+                            <p class="text-base font-bold text-gray-900 mt-2">₹${priceInInr}</p>
+                        </div>
+                    `;
+                    fragment.appendChild(card);
+                });
+                this.resultsGrid.appendChild(fragment);
+            }
+            
+            updateResultsCount() {
+                const count = this.filteredProducts.length;
+                this.resultsCount.textContent = `Found ${count} relevant product${count !== 1 ? 's' : ''}`;
+            }
+
+            clearImage() {
+                this.fileInput.value = '';
+                this.urlInput.value = '';
+                this.previewImage.src = '';
+                this.uploadedImageBase64 = null;
+                this.filteredProducts = [];
+                this.isProcessing = false;
+                this.updateUIState('initial');
+            }
+            
+            updateUIState(state) {
+                this.loadingSection.classList.add('hidden');
+                this.uploadContainer.classList.add('hidden');
+                this.controlsSection.classList.add('hidden');
+                
+                switch (state) {
+                    case 'loading':
+                        this.uploadContainer.classList.add('hidden');
+                        this.previewContainer.classList.remove('hidden');
+                        this.resultsGrid.innerHTML = ''; 
+                        this.loadingSection.classList.remove('hidden');
+                        this.renderSkeletonLoader();
+                        break;
+                    case 'preview':
+                        this.uploadContainer.classList.add('hidden');
+                        this.previewContainer.classList.remove('hidden');
+                        this.renderInitialState();
+                        break;
+                    case 'results':
+                        this.previewContainer.classList.remove('hidden');
+                        this.controlsSection.classList.remove('hidden');
+                        break;
+                    case 'initial':
+                    default:
+                        this.uploadContainer.classList.remove('hidden');
+                        this.previewContainer.classList.add('hidden');
+                        this.renderInitialState();
+                        break;
+                }
+            }
+
+            showToast(message, type = 'info') {
+                const colors = { info: 'bg-blue-500', success: 'bg-green-500', error: 'bg-red-500' };
+                const toast = document.createElement('div');
+                toast.className = `w-80 p-4 rounded-lg text-white shadow-xl transform transition-all duration-300 ease-in-out translate-x-full ${colors[type]}`;
+                toast.textContent = message;
+                this.toastContainer.appendChild(toast);
+                setTimeout(() => toast.classList.remove('translate-x-full'), 10);
+                setTimeout(() => {
+                    toast.classList.add('translate-x-full');
+                    toast.addEventListener('transitionend', () => toast.remove());
+                }, 4000);
+            }
+            
+            escapeHtml(text) {
+                const div = document.createElement('div');
+                div.textContent = text;
+                return div.innerHTML;
+            }
+
+            /**
+             * Uses Gemini to get semantic search keywords and a primary category for an image.
+             * @returns {Promise<{primaryCategory: string, keywords: string[]}>} A promise that resolves to an analysis object.
+             */
+            async getAiAnalysis() {
+                if (!this.uploadedImageBase64) return { primaryCategory: null, keywords: [] };
+                try {
+                    const apiKey = ""; 
+                    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}`;
+                    const prompt = `Analyze the main product in this image. From the following list of categories, choose the single most relevant one: [${this.productCategories.map(c => `"${c}"`).join(', ')}]. Then, provide 5-7 additional lowercase search keywords. Return a JSON object with two keys: "primaryCategory" (a string) and "keywords" (an array of strings). Example: {"primaryCategory": "mens-shirts", "keywords": ["t-shirt", "clothing", "casual", "cotton", "shirt"]}`;
+                    
+                    const payload = {
+                        contents: [{
+                            parts: [
+                                { text: prompt },
+                                { inlineData: { mimeType: "image/jpeg", data: this.uploadedImageBase64 } }
+                            ]
+                        }]
+                    };
+                    const response = await fetch(apiUrl, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+                    if (!response.ok) throw new Error('AI analysis failed.');
+                    const result = await response.json();
+                    const text = result.candidates[0].content.parts[0].text;
+                    
+                    const jsonMatch = text.match(/\{[\s\S]*\}/);
+                    if (jsonMatch && jsonMatch[0]) {
+                        return JSON.parse(jsonMatch[0]);
+                    } else {
+                        throw new Error("AI response did not contain a valid JSON object.");
+                    }
+                } catch (error) {
+                    console.error("Failed to get AI analysis:", error);
+                    this.showToast('AI analysis failed. Please try another image.', 'error');
+                    throw error;
+                }
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            new VisualProductMatcher();
+        });
+    </script>
+</body>
+</html>
