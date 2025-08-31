@@ -2,7 +2,7 @@
 
 Find products with a picture! This AI-powered web application lets you upload an image and instantly discovers visually similar items from a product catalog. It leverages the power of Google's Gemini AI to understand the contents of your image and perform a smart semantic search.
 
-![Visual Product Matcher Demo](https://visual-matcher.vercel.app/)
+![Visual Product Matcher Demo](https://visual-matcher.vercel.app)
 <!-- NOTE: do not upload images till the database is loaded!! -->
 
 ---
